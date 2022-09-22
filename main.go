@@ -16,5 +16,5 @@ type Recipe struct {
 
 func main() {
 	router := gin.Default()
-	router.Run() //
+	router.Run()
 }
