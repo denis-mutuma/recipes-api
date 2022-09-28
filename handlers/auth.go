@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"net/http"
+	"os"
 	"time"
 
+	"github.com/auth0-community/go-auth0"
 	"github.com/denis-mutuma/recipes-api/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-contrib/sessions"
@@ -13,6 +15,7 @@ import (
 	"github.com/rs/xid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"gopkg.in/square/go-jose.v2"
 )
 
 type AuthHandler struct {
@@ -78,11 +81,18 @@ func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 
 func (handler *AuthHandler) AuthMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		session := sessions.Default(c)
-		sessionToken := session.Get("token")
-		if sessionToken == nil {
-			c.JSON(http.StatusForbidden, gin.H{"message": "Not logged in"})
+		var auth0Domain = "https://" + os.Getenv("AUTH0_DOMAIN") + "/"
+		client := auth0.NewJWKClient(auth0.JWKClientOptions{URI: auth0Domain + ".well-known/jwks.json"}, nil)
+		configuration := auth0.NewConfiguration(client, []string{os.Getenv("AUTH0_API_IDENTIFIER")},
+			auth0Domain, jose.RS256)
+		validator := auth0.NewValidator(configuration, nil)
+
+		_, err := validator.ValidateRequest(c.Request)
+
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
 			c.Abort()
+			return
 		}
 		c.Next()
 	}
