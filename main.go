@@ -113,5 +113,5 @@ func main() {
 		authorized.DELETE("recipes/:id", recipesHandler.DeleteRecipeHandler)
 		authorized.GET("/recipes/:id", recipesHandler.GetOneRecipeHandler)
 	}
-	router.Run()
+	router.RunTLS(":443", "certs/localhost.crt", "certs/localhost.key")
 }
