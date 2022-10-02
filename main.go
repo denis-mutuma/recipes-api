@@ -23,7 +23,9 @@ import (
 	"context"
 	"log"
 	"os"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	redisStore "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
@@ -95,6 +97,14 @@ func init() {
 
 func main() {
 	router := gin.Default()
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "OPTIONS"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	store, _ := redisStore.NewStore(10, "tcp", "localhost:6379", "", []byte("secret"))
 	router.Use(sessions.Sessions("recipes_api", store))
@@ -113,5 +123,7 @@ func main() {
 		authorized.DELETE("recipes/:id", recipesHandler.DeleteRecipeHandler)
 		authorized.GET("/recipes/:id", recipesHandler.GetOneRecipeHandler)
 	}
-	router.RunTLS(":443", "certs/localhost.crt", "certs/localhost.key")
+	// router.RunTLS(":443", "certs/localhost.crt", "certs/localhost.key")
+
+	router.Run()
 }
